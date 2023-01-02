@@ -23,7 +23,8 @@ def Product(models.Model):
     created = models.DateTimeField(auto_now_add=True)
 ```
 
-In urls.py, where you normally would instantiate your NinjaAPI,
+In your Django app, you can implement a complete set of CRUD views with the following code.
+See [the django-ninja documentation](https://django-ninja.rest-framework.com/guides/routers/) on how to add routers to your API.
 
 ```Python
 from ninjutsu import CrudView, CrudRouter
@@ -47,11 +48,11 @@ class ProductView(CrudView):
 
 That's it. This automatically adds the following endpoints to your API:
 
-  * GET /products/  (lists all objects)
-  * POST /products/  (creates a new object)
-  * GET /products/{id}  (retrieves a single object)
-  * PUT /products/{id}  (updates an object)
-  * DELETE /products/{id} (deletes an object)
+  * GET `/products/`  (lists all objects)
+  * POST `/products/`  (creates a new object)
+  * GET `/products/{id}`  (retrieves a single object)
+  * PUT `/products/{id}`  (updates an object)
+  * DELETE `/products/{id}` (deletes an object)
 
 These are ready-to-use. Together with filtering and authorization (explained below) might be actually enough for your application, without any view-related code.
 
@@ -79,8 +80,8 @@ class ProductView(CrudView):
 
 ```
 
-/products/?sku=PROD001
-queryset = queryset.filter(sku='PROD001')
+The URL `/products/?sku=PROD001` is filtered as in
+`queryset = queryset.filter(sku="PROD001")`
 
 
 ### Filter fields with aliases
@@ -98,7 +99,7 @@ class SinceFilter(Filter):
 A call to 
 `/products/?since=2020-01-01`
 filters the result like
-queryset = queryset.filter(date__gte=datetime.datetime(2020, 1, 1))
+`queryset = queryset.filter(date__gte=datetime.datetime(2020, 1, 1))`
 
 
 ### Custom filters
