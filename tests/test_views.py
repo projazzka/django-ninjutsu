@@ -1,6 +1,11 @@
+from decimal import Decimal
+from typing import List
 import pytest
 from app.models import Product
 from django.test import Client
+
+
+pytestmark = pytest.mark.usefixtures("db")
 
 
 @pytest.fixture
@@ -12,7 +17,19 @@ def single_object():
     return obj
 
 
-def test_single_receive(db, client, single_object):
+@pytest.fixture
+def three_objects():
+    return [
+        Product.objects.create(sku=sku, price=price, stock=stock)
+        for (sku, price, stock) in [
+            ("SHIRT001", "12.5", 10),
+            ("SHIRT002", "13.5", 15),
+            ("CAPPIE01", "4.95", 50),
+        ]
+    ]
+
+
+def test_single_receive(client, single_object):
     response = client.get(f"/api/products/{single_object.pk}")
 
     data = response.json()
@@ -22,7 +39,7 @@ def test_single_receive(db, client, single_object):
     assert not (set(data.keys()).difference({"id", "sku", "price", "stock"}))
 
 
-def test_single_list(db, client, single_object):
+def test_single_list(client, single_object):
     response = client.get("/api/products/")
 
     items = response.json()
@@ -34,7 +51,7 @@ def test_single_list(db, client, single_object):
     assert not (set(data.keys()).difference({"id", "sku", "price", "stock"}))
 
 
-def test_create(db, client: Client):
+def test_create(client: Client):
     response = client.post(
         "/api/products/",
         {
@@ -54,14 +71,41 @@ def test_create(db, client: Client):
     assert not (set(data.keys()).difference({"id", "sku", "price", "stock"}))
 
 
-def test_single_delete(db, client: Client, single_object):
+def test_single_delete(client: Client, single_object):
     response = client.delete(f"/api/products/{single_object.pk}")
 
     assert response.status_code == 204
     assert not response.content
 
 
-def test_single_delete_not_found(db, client: Client, single_object):
-    response = client.delete(f"/api/products/{single_object.pk + 1}")
+def test_single_delete_not_found(client: Client, three_objects: List[Product]):
+    response = client.delete(f"/api/products/123")
 
     assert response.status_code == 404
+
+
+def test_empty_list(client):
+    response = client.get("/api/products/")
+
+    items = response.json()
+    assert type(items) is list
+    assert len(items) == 0
+
+
+def test_retrieve_not_found(client, three_objects):
+    response = client.get("/api/products/123")
+
+    assert response.status_code == 404
+
+
+def test_filter_by_sku(client: Client, three_objects):
+    response = client.get("/api/by-sku/?sku=SHIRT002")
+
+    assert response.status_code == 200
+    items = response.json()
+    assert type(items) is list
+    assert len(items) == 1
+    item = items[0]
+    assert item["sku"] == "SHIRT002"
+    assert Decimal(item["price"]) == Decimal("13.5")
+    assert item["stock"] == 15

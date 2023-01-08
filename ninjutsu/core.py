@@ -1,15 +1,14 @@
-from functools import wraps
 from enum import Enum
-from typing import List, Callable, Type
+from functools import wraps
+from typing import Callable, List, Type
 
-from django.db.models import QuerySet, Model
+from django.db.models import Model, QuerySet
 from django.http import Http404, HttpRequest
 from django.shortcuts import get_object_or_404
-from ninja import Query, Router
-from ninja import Schema, ModelSchema
+from ninja import ModelSchema, Query, Router, Schema
 from ninja.pagination import paginate
 
-from .filters import Filter, filtered
+from .filters import Filter
 
 
 class Action(Enum):
@@ -81,10 +80,17 @@ class CrudRouter(Router):
 
         class CrudDispatcher:
             @classmethod
-            # @filtered(view_class.filter_class)
-            def list(cls, request):
+            def list(cls, request, *args, **kwargs):
                 view = view_class(request, Action.LIST)
-                return view.list()
+                result = view.list()
+                if (
+                    view.filter_class
+                    and type(result) is QuerySet
+                    and "ninjutsu_filter" in kwargs
+                ):
+                    schema = kwargs.pop("ninjutsu_filter")
+                    result = schema.filter(result, request)
+                return result
 
             @classmethod
             def retrieve(cls, request, pk: int):
@@ -106,6 +112,14 @@ class CrudRouter(Router):
                 view = view_class(request, Action.DELETE)
                 return view.delete(pk)
 
+        if view_class.filter_class:
+            CrudDispatcher.list.__func__._ninja_contribute_args = [  # type: ignore
+                (
+                    "ninjutsu_filter",
+                    view_class.filter_class,
+                    Query(...),  # no idea what this is.
+                ),
+            ]
         return CrudDispatcher
 
     def register(self, sub_path: str, view_class: Type[CrudView]) -> Type[CrudView]:

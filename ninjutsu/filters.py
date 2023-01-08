@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Callable
+from typing import Callable, List, Type
 
 from django.db.models import QuerySet
 from django.http import HttpRequest
@@ -29,22 +29,10 @@ class Filter(Schema):
         return queryset
 
 
-def filtered(filter_class: Filter):
-    def decorator(view_func: Callable) -> Callable:
-        @wraps(view_func)
-        def filtered_view(request: HttpRequest, *args, **kwargs):
-            filter_schema = kwargs.pop("ninjutsu_filters")
-            queryset = view_func(request, *args, **kwargs)
-            # queryset = filter_schema.filter_queryset(queryset, request)
-            return queryset
-
-        filtered_view._ninja_contribute_args = [  # type: ignore
-            (
-                "ninjutsu_filters",
-                filter_class,
-                Query(...),  # no idea what this is.
-            ),
-        ]
-        return filtered_view
-
-    return decorator
+def apply_filters(
+    queryset: QuerySet, request: HttpRequest, filters: List[Type[Filter]]
+) -> QuerySet:
+    for filter_class in filters:
+        instance = filter_class(**request.GET)
+        queryset = instance.filter(queryset, request)
+    return queryset

@@ -17,6 +17,7 @@ Home = "https://github.com/projazzka"
 [tool.pytest.ini_options]
 pythonpath = [".", "./tests/demo-project"]
 DJANGO_SETTINGS_MODULE = "project.settings"
+#addopts = "--usefixtures=transactional_db"
 
 [tool.mypy]
 packages = ["ninjutsu",]
