@@ -1,8 +1,8 @@
 from ninjutsu import CrudRouter, CrudView
 
+from .filters import SkuFilter
 from .models import Product
 from .schemas import ProductSchema
-from .filters import SkuFilter
 
 router = CrudRouter()
 

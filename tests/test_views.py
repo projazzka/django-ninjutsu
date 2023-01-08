@@ -1,9 +1,9 @@
 from decimal import Decimal
 from typing import List
+
 import pytest
 from app.models import Product
 from django.test import Client
-
 
 pytestmark = pytest.mark.usefixtures("db")
 
