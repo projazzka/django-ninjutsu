@@ -35,7 +35,11 @@ class CrudView:
         self.action = action
 
     def get_queryset(self):
-        return self.queryset if self.queryset is not None else self.model.objects.all()
+        return (
+            self.queryset.all()  # .all() forces queryset re-evaluation!
+            if self.queryset is not None
+            else self.model.objects.all()
+        )
 
     def get_model(self):
         return self.model or self.queryset.model
